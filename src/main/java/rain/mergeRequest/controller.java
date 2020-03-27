@@ -1,6 +1,7 @@
 package rain.mergeRequest;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,26 +41,30 @@ public class controller {
         // 立即执行任务，并间隔10秒重复执行。
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             // 捕获异常
+            //1.从阻塞队列中取出queue的请求，生成一次批量查询。
+            int size = queue.size();
+            if (size == 0) return;
+
+            List<Request> requests = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                // 移出队列，并返回。
+                Request poll = queue.poll();
+                requests.add(poll);
+            }
+
+            //2.组装一个批量查询请求参数。
+            List<String> ids = requests.stream().map(Request::getId).collect(Collectors.toList());
+            System.out.println("本次合并请求数量：" + ids.size());
+
+            Map<String, Response> responseMap = Maps.newHashMap();
             try {
-                //1.从阻塞队列中取出queue的请求，生成一次批量查询。
-                int size = queue.size();
-                if (size == 0) return;
-
-                List<Request> requests = new ArrayList<>(size);
-                for (int i = 0; i < size; i++) {
-                    // 移出队列，并返回。
-                    Request poll = queue.poll();
-                    requests.add(poll);
-                }
-
-                //2.组装一个批量查询请求参数。
-                List<String> ids = requests.stream().map(Request::getId).collect(Collectors.toList());
-                System.out.println("本次合并请求数量：" + ids.size());
-
                 //3.请求service 得到结果list。
-                List<Response> addresses = queryAllResponse(ids);
-                Map<String, Response> responseMap = addresses.stream().collect(Collectors.toMap(Response::getId, o -> o));
+                List<Response> addresses = queryAllResponse1(ids);
+                responseMap = addresses.stream().collect(Collectors.toMap(Response::getId, o -> o));
 
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
                 //4.将结果响应给每一个单独的用户请求。
                 for (Request request : requests) {
                     //根据请求中携带的能表示唯一参数，去批量查询的结果中找响应。
@@ -69,9 +74,6 @@ public class controller {
                     //complete(),源码注释翻译：如果尚未完成，则将由方法和相关方法返回的值设置为给定值
                     request.getFuture().complete(address);
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }, 0, 10, TimeUnit.SECONDS);
     }
@@ -86,5 +88,9 @@ public class controller {
         address2.setId("2");
         address2.setName("22");
         return Lists.newArrayList(address1, address2);
+    }
+
+    private List<Response> queryAllResponse1(List<String> ids) {
+        throw new RuntimeException();
     }
 }
