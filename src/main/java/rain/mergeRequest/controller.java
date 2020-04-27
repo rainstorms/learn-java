@@ -18,19 +18,23 @@ import java.util.stream.Collectors;
 public class controller {
 
     //并发安全的阻塞队列，积攒请求。（每隔N毫秒批量处理一次）
-    LinkedBlockingQueue<Request> queue = new LinkedBlockingQueue();
+    private LinkedBlockingQueue<Request> queue = new LinkedBlockingQueue<>();
 
     @RequestMapping("/queryResponseById/{id}")
-    public Response queryResponseById(@PathVariable String id) throws Exception {
+    public Result queryResponseById(@PathVariable String id) throws Exception {
         //异步编程，创建当前线程的任务，由其他线程异步运算，获取异步处理的结果。
         CompletableFuture<Response> future = new CompletableFuture<>();
         Request request = new Request(id, future);
 
         //请求参数放入队列中。定时任务去消化请求。
-        queue.add(request);
+        try {
+            queue.add(request);
+        } catch (IllegalStateException e) {
+            return new Result("队列满了，请重试", null);
+        }
 
         //阻塞等待获取结果。
-        return future.get();
+        return new Result("", future.get());
     }
 
     @PostConstruct
