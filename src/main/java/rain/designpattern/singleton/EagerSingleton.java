@@ -6,7 +6,7 @@ public class EagerSingleton {
     private EagerSingleton() {
     }
 
-    public static EagerSingleton getInstance(){
+    public static EagerSingleton getInstance() {
         return eagerSingleton;
     }
 }
