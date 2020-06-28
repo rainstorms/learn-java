@@ -6,7 +6,6 @@ public class xx {
 
         LazySingleton lazySingleton = LazySingleton.getInstance();
 
-//        EnumLazySingleton.INSTANCE;
-
+        EnumEagerSingleton singleton = EnumEagerSingleton.getInstance();
     }
 }
