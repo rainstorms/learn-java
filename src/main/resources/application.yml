@@ -8,3 +8,13 @@ server:
   error:
     whitelabel:
       enabled: false
+
+rain:
+  home:
+    province: yizheng
+    member-number: 3
+    member: bb, mm, yy
+  company:
+    province: nanjing
+    member-number: 2
+    member: qiangqiang, weiwei
